@@ -26,6 +26,19 @@ def export_ply(filename, points):
     pc.points = o3d.utility.Vector3dVector(points)
     o3d.io.write_point_cloud(filename, pc, write_ascii=True)
 
+def vis_all_points_as_pcds(points_list):
+    pcd_list = []
+    last_transltion=0.0
+    for points in points_list:
+        pc = o3d.geometry.PointCloud()
+        pc.points = o3d.utility.Vector3dVector(points)
+        extent_x= pc.get_axis_aligned_bounding_box().get_extent()[0] # get just x extent
+        print("Extent x: ", extent_x)
+        pc.translate([last_transltion, 0,0])
+        pcd_list.append(pc)
+        last_transltion+=extent_x*1.3
+    
+    o3d.visualization.draw_geometries(pcd_list)
 
 def test_single_category(category, model, params, save=True):
     if save:
@@ -36,7 +49,7 @@ def test_single_category(category, model, params, save=True):
         make_dir(image_dir)
         make_dir(output_dir)
 
-    test_dataset = ShapeNet('/media/server/new/datasets/PCN', 'test_novel' if params.novel else 'test', category)
+    test_dataset = ShapeNet('data/PCN', 'test_novel' if params.novel else 'test', category)
     test_dataloader = Data.DataLoader(test_dataset, batch_size=params.batch_size, shuffle=False)
 
     index = 1
@@ -54,6 +67,7 @@ def test_single_category(category, model, params, save=True):
                 gt_pc = c[i].detach().cpu().numpy()
                 total_f_score += f_score(output_pc, gt_pc)
                 if save:
+                    vis_all_points_as_pcds( [input_pc, output_pc, gt_pc])
                     plot_pcd_one_view(os.path.join(image_dir, '{:03d}.png'.format(index)), [input_pc, output_pc, gt_pc], ['Input', 'Output', 'GT'], xlim=(-0.35, 0.35), ylim=(-0.35, 0.35), zlim=(-0.35, 0.35))
                     export_ply(os.path.join(output_dir, '{:03d}.ply'.format(index)), output_pc)
                 index += 1
@@ -101,7 +115,7 @@ def test(params, save=False):
 
 
 def test_single_category_emd(category, model, params):
-    test_dataset = ShapeNet('/media/server/new/datasets/PCN', 'test_novel' if params.novel else 'test', category)
+    test_dataset = ShapeNet('data/PCN', 'test_novel' if params.novel else 'test', category)
     test_dataloader = Data.DataLoader(test_dataset, batch_size=params.batch_size, shuffle=False)
 
     total_emd = 0.0

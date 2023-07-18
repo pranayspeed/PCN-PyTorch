@@ -63,8 +63,17 @@ class ShapeNet(data.Dataset):
         else:
             partial_path = self.partial_paths[index]
         complete_path = self.complete_paths[index]
+        got_error = True
+        while got_error:
+            try:
 
-        partial_pc = self.random_sample(self.read_point_cloud(partial_path), 2048)
+                partial_pc = self.random_sample(self.read_point_cloud(partial_path), 2048)
+                got_error = False
+            except:
+                print(partial_path)
+                partial_path = self.partial_paths[index].format(random.randint(0, 7))
+                #partial_pc = self.random_sample(self.read_point_cloud(partial_path), 2048)
+        
         complete_pc = self.random_sample(self.read_point_cloud(complete_path), 16384)
 
         return torch.from_numpy(partial_pc), torch.from_numpy(complete_pc)
